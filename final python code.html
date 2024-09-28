@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2487.3">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">from pytube import YouTube</p>
+<p class="p1">import speech_recognition as sr</p>
+<p class="p1">import subprocess</p>
+<p class="p1">import os</p>
+<p class="p1">from datetime import datetime</p>
+<p class="p1">from nltk.tokenize import word_tokenize</p>
+<p class="p1">from nltk.probability import FreqDist</p>
+<p class="p1">from nltk.corpus import stopwords</p>
+<p class="p1">import nltk</p>
+<p class="p1">nltk.download('punkt')</p>
+<p class="p1">nltk.download('stopwords')</p>
+<p class="p2"><br></p>
+<p class="p1">def download_audio(youtube_link):</p>
+<p class="p1"><span class="Apple-converted-space">    </span>yt = YouTube(youtube_link)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>audio_stream = yt.streams.filter(only_audio=True).first()</p>
+<p class="p1"><span class="Apple-converted-space">    </span>audio_stream.download(filename='downloaded_audio.mp4')</p>
+<p class="p2"><br></p>
+<p class="p1">def audio_to_text(language):</p>
+<p class="p1"><span class="Apple-converted-space">    </span>subprocess.run(['ffmpeg', '-i', 'downloaded_audio.mp4', '-ar', '16000', '-ac', '1', 'converted_audio.wav'], check=True)</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>recognizer = sr.Recognizer()</p>
+<p class="p1"><span class="Apple-converted-space">    </span>with sr.AudioFile('converted_audio.wav') as source:</p>
+<p class="p1"><span class="Apple-converted-space">        </span>audio = recognizer.record(source)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>try:</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text = recognizer.recognize_google(audio, language=language)</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return text</p>
+<p class="p1"><span class="Apple-converted-space">        </span>except sr.UnknownValueError:</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return "Google Speech Recognition could not understand audio."</p>
+<p class="p1"><span class="Apple-converted-space">        </span>except sr.RequestError as e:</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return f"Could not request results from Google Speech Recognition service; {e}"</p>
+<p class="p2"><br></p>
+<p class="p1">def write_text_to_html_file(text):</p>
+<p class="p1"><span class="Apple-converted-space">    </span>timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filename = f'output_{timestamp}.html'</p>
+<p class="p1"><span class="Apple-converted-space">    </span>with open(filename, 'w') as file:</p>
+<p class="p1"><span class="Apple-converted-space">        </span>file.write("&lt;html&gt;&lt;body&gt;&lt;p&gt;" + text + "&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;")</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return filename</p>
+<p class="p2"><br></p>
+<p class="p1">def bold_and_increase_font_of_important_words_in_html(filename):</p>
+<p class="p1"><span class="Apple-converted-space">    </span>with open(filename, 'r') as file:</p>
+<p class="p1"><span class="Apple-converted-space">        </span>text = file.read()</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>words = word_tokenize(text)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>words_ns = [word for word in words if word.lower() not in stopwords.words('english')]</p>
+<p class="p1"><span class="Apple-converted-space">    </span>fdist = FreqDist(words_ns)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>common_words = [word[0] for word in fdist.most_common(10)]</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>enhanced_text = " ".join([f"&lt;span style='font-size:24px;'&gt;&lt;b&gt;{word}&lt;/b&gt;&lt;/span&gt;" if word in common_words else word for word in words])</p>
+<p class="p1"><span class="Apple-converted-space">    </span>with open(filename, 'w') as file:</p>
+<p class="p1"><span class="Apple-converted-space">        </span>file.write("&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body&gt;" + enhanced_text + "&lt;/body&gt;&lt;/html&gt;")</p>
+<p class="p2"><br></p>
+<p class="p1">def main(youtube_link, language):</p>
+<p class="p1"><span class="Apple-converted-space">    </span>download_audio(youtube_link)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>text = audio_to_text(language)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filename = write_text_to_html_file(text)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>bold_and_increase_font_of_important_words_in_html(filename)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>os.remove('downloaded_audio.mp4')</p>
+<p class="p1"><span class="Apple-converted-space">    </span>os.remove('converted_audio.wav')</p>
+<p class="p2"><br></p>
+<p class="p1">if __name__ == "__main__":</p>
+<p class="p1"><span class="Apple-converted-space">    </span>youtube_link = input("Enter the YouTube link: ")</p>
+<p class="p1"><span class="Apple-converted-space">    </span>print("Choose language for transcription: 'en-US' for English, 'hi-IN' for Hindi")</p>
+<p class="p1"><span class="Apple-converted-space">    </span>language = input("Language code: ")</p>
+<p class="p1"><span class="Apple-converted-space">    </span>main(youtube_link, language)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>print("Transcription completed.")</p>
+<p class="p2"><br></p>
+</body>
+</html>
